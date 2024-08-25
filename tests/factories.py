@@ -17,6 +17,8 @@
 """
 Test Factory to make fake objects for testing
 """
+
+# Extra code
 import factory
 from factory.fuzzy import FuzzyChoice, FuzzyDecimal
 from service.models import Product, Category
