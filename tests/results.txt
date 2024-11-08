@@ -1,0 +1,64 @@
+
+Test Flask CLI Commands
+[1;32m- It should call the db-create command[1;0m
+
+Test Cases for Product Model
+[1;32m- It should Create a product and add it to the database[1;0m
+[1;32m- It should Create a product and assert that it exists[1;0m
+[1;32m- It should Delete a Product[1;0m
+[1;32m- deserialize invalid boolean available[1;0m
+[1;32m- deserialize invalid category[1;0m
+[1;31m- deserialize invalid price type (ERROR)[1;0m
+[1;32m- deserialize missing key[1;0m
+[1;32m- It should Find Products by Availability[1;0m
+[1;32m- It should Find Products by Category[1;0m
+[1;32m- It should Find a Product by Name[1;0m
+[1;32m- It should Find Products by Price, handling string input correctly[1;0m
+[1;32m- It should List all Products in the database[1;0m
+[1;32m- It should Read a Product[1;0m
+[1;32m- It should Update a Product[1;0m
+[1;32m- update with empty id[1;0m
+
+Product Service tests
+[1;32m- It should Create a new Product[1;0m
+[1;32m- It should not Create a Product with no Content-Type[1;0m
+[1;32m- It should not Create a Product without a name[1;0m
+[1;32m- It should not Create a Product with wrong Content-Type[1;0m
+[1;32m- It should be healthy[1;0m
+[1;32m- It should return the index page[1;0m
+
+======================================================================
+ERROR: test_deserialize_invalid_price_type (tests.test_models.TestProductModel)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/project/tdd-bdd-final-project/service/models.py", line 136, in deserialize
+    self.price = Decimal(data["price"])
+decimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/project/tdd-bdd-final-project/tests/test_models.py", line 100, in test_deserialize_invalid_price_type
+    product.deserialize(data)
+  File "/home/project/tdd-bdd-final-project/service/models.py", line 137, in deserialize
+    except (InvalidOperation, TypeError):
+NameError: name 'InvalidOperation' is not defined
+
+Name                               Stmts   Miss  Cover   Missing
+----------------------------------------------------------------
+service/__init__.py                   19      3    84%   53-56
+service/common/__init__.py             3      0   100%
+service/common/cli_commands.py         7      0   100%
+service/common/error_handlers.py      33      9    73%   48-50, 59-61, 89-91
+service/common/log_handlers.py        12      1    92%   36
+service/common/status.py              64      0   100%
+service/config.py                      7      0   100%
+service/models.py                     98      3    97%   139, 152, 156
+service/routes.py                     33      0   100%
+----------------------------------------------------------------
+TOTAL                                276     16    94%
+----------------------------------------------------------------------
+Ran 22 tests in 0.911s
+
+FAILED (errors=1)
+

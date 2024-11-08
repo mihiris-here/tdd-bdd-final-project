@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -66,6 +66,41 @@ class TestProductModel(unittest.TestCase):
         """This runs after each test"""
         db.session.remove()
 
+
+    def test_deserialize_missing_key(self):
+        # Test for missing 'name' key
+        data = {"description": "A product", "price": "10.99", "available": True, "category": "ELECTRONICS"}
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertEqual(str(context.exception), "Invalid product: missing name")
+
+    def test_deserialize_invalid_boolean_available(self):
+        # Test for invalid type for 'available' (not boolean)
+        data = {"name": "Product", "description": "A product", "price": "10.99", "available": "yes", "category": "ELECTRONICS"}
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertTrue("Invalid type for boolean [available]" in str(context.exception))
+
+    def test_deserialize_invalid_category(self):
+        # Test for invalid 'category' value that does not map to an enum value
+        data = {"name": "Product", "description": "A product", "price": "10.99", "available": True, "category": "NON_EXISTENT_CATEGORY"}
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertTrue("Invalid category: NON_EXISTENT_CATEGORY" in str(context.exception))
+
+
+    def test_deserialize_invalid_price_type(self):
+        # Test for invalid 'price' type (not a valid decimal number)
+        data = {"name": "Product", "description": "A product", "price": "invalid_price", "available": True, "category": "ELECTRONICS"}
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertTrue("Invalid price format" in str(context.exception))
+
+     
     ######################################################################
     #  T E S T   C A S E S
     ######################################################################
@@ -100,10 +135,7 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(Decimal(new_product.price), product.price)
         self.assertEqual(new_product.available, product.available)
         self.assertEqual(new_product.category, product.category)
-
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    
     def test_read_a_product(self):
         """It should Read a Product"""
         product = ProductFactory()
@@ -119,22 +151,39 @@ class TestProductModel(unittest.TestCase):
 
     def test_update_a_product(self):
         """It should Update a Product"""
+        # Create a product
         product = ProductFactory()
         product.id = None
         product.create()
         self.assertIsNotNone(product.id)
-        # Change it and save it
+
+        # Update the product description and save it
         product.description = "testing"
         original_id = product.id
         product.update()
+
+        # Verify that the ID hasn't changed
         self.assertEqual(product.id, original_id)
         self.assertEqual(product.description, "testing")
-        # Fetch it back and make sure the id hasn't changed
-        # but the data did change
+
+        # Fetch it back from the database
+        fetched_product = Product.find(original_id)
+
+        # Verify that the fetched product has the updated description
+        self.assertIsNotNone(fetched_product)
+        self.assertEqual(fetched_product.id, original_id)
+        self.assertEqual(fetched_product.description, "testing")
+
+        # Verify the total number of products in the database remains the same
         products = Product.all()
         self.assertEqual(len(products), 1)
-        self.assertEqual(products[0].id, original_id)
-        self.assertEqual(products[0].description, "testing")
+
+    def test_update_with_empty_id(self):
+        product = Product(name="Test Product", id=None)  # Empty ID field
+        with self.assertRaises(DataValidationError) as context:
+            product.update()
+        
+        self.assertEqual(str(context.exception), "Update called with empty ID field")
 
     def test_delete_a_product(self):
         """It should Delete a Product"""
@@ -168,6 +217,40 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.count(), count)
         for product in found:
             self.assertEqual(product.name, name)
+
+    def test_find_by_price(self):
+        """It should Find Products by Price, handling string input correctly"""
+        products = ProductFactory.create_batch(5)
+        for product in products:
+            product.create()
+
+        # Select a price from one of the products
+        price = products[0].price
+
+        # Test with Decimal input
+        found = Product.find_by_price(price)
+        self.assertEqual(found.count(), len([p for p in products if p.price == price]))
+        for product in found:
+            self.assertEqual(product.price, price)
+
+        # Test with string input
+        found = Product.find_by_price(str(price))
+        self.assertEqual(found.count(), len([p for p in products if p.price == price]))
+        for product in found:
+            self.assertEqual(product.price, price)
+
+        # Test with string input containing whitespace
+        found = Product.find_by_price(f"  {price}  ")
+        self.assertEqual(found.count(), len([p for p in products if p.price == price]))
+        for product in found:
+            self.assertEqual(product.price, price)
+
+        # Test with string input containing quotes
+        found = Product.find_by_price(f'"{price}"')
+        self.assertEqual(found.count(), len([p for p in products if p.price == price]))
+        for product in found:
+            self.assertEqual(product.price, price)
+
 
     def test_find_by_availability(self):
         """It should Find Products by Availability"""
