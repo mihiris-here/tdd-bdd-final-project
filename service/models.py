@@ -13,19 +13,19 @@
 # limitations under the License.
 
 """
-    Models for Product Demo Service
+Models for Product Demo Service
 
-    All of the models are stored in this module
+All of the models are stored in this module
 
-    Models
-    ------
-    Product - A Product used in the Product Store
+Models
+------
+Product - A Product used in the Product Store
 
-    Attributes:
-    -----------
-    name (string) - the name of the product
-    description (string) - the description the product belongs to (i.e., dog, cat)
-    available (boolean) - True for products that are available for adoption
+Attributes:
+-----------
+name (string) - the name of the product
+description (string) - the description the product belongs to (i.e., dog, cat)
+available (boolean) - True for products that are available for adoption
 
 """
 import logging
@@ -137,13 +137,10 @@ class Product(db.Model):
                 self.available = data["available"]
             else:
                 raise DataValidationError(
-                    "Invalid type for boolean [available]: " + str(type(data["available"]))
+                    "Invalid type for boolean [available]: "
+                    + str(type(data["available"]))
                 )
-            try:
-                # create enum from string
-                self.category = getattr(Category, data["category"])
-            except AttributeError:
-                raise DataValidationError(f"Invalid category: {data['category']}")
+            self.category = getattr(Category, data["category"])  # create enum from string
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error
         except KeyError as error:
