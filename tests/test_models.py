@@ -191,3 +191,14 @@ class TestProductModel(unittest.TestCase):
         found = Product.find_by_price(price)
         self.assertEqual(found.count(), count)
 
+    def test_find_by_name(self):
+        """It should find products by name"""
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+        name = products[0].name
+        count = len([product for product in products if product.name == name])
+        found = Product.find_by_name(name)
+        self.assertEqual(found.count(), count)
+
+
